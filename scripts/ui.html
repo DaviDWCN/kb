@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AgenticKB</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font:14px/1.5 system-ui,sans-serif;background:#f0f2f5;display:flex;min-height:100vh}
+aside{width:240px;background:#1a1a2e;color:#ccc;padding:24px 20px;display:flex;flex-direction:column;gap:16px}
+aside h1{color:#fff;font-size:18px;margin-bottom:4px}
+aside .stat{font-size:12px;color:#888}
+main{flex:1;display:flex;flex-direction:column;max-width:800px;margin:0 auto;padding:24px}
+#chat{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:16px;margin-bottom:16px}
+.msg{max-width:85%;padding:12px 16px;border-radius:12px;line-height:1.6;white-space:pre-wrap}
+.msg.q{align-self:flex-end;background:#1677ff;color:#fff}
+.msg.a{align-self:flex-start;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.chunks{margin-top:8px;font-size:12px;color:#666}
+.chunk{border-top:1px solid #eee;padding:6px 0}
+.chunk .meta{font-weight:600;color:#1677ff}
+.chunk .source{color:#999;font-size:11px;word-break:break-all}
+.chunk .text{white-space:pre-wrap;margin-top:4px;color:#333}
+form{display:flex;gap:8px}
+form input{flex:1;padding:10px 14px;border:1px solid #d9d9d9;border-radius:8px;font-size:14px;outline:none}
+form input:focus{border-color:#1677ff}
+form button{padding:10px 20px;background:#1677ff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px}
+form button:disabled{opacity:.5}
+.loader{text-align:center;color:#999;padding:8px}
+</style>
+</head>
+<body>
+<aside>
+<h1>AgenticKB</h1>
+<div class="stat" id="stat">chunks: --</div>
+</aside>
+<main>
+<div id="chat"></div>
+<form onsubmit="ask(event)">
+<input id="q" placeholder="输入问题..." autofocus>
+<button id="btn" type="submit">发送</button>
+</form>
+</main>
+<script>
+async function ask(e){
+  e.preventDefault();
+  const q=document.getElementById('q').value.trim();
+  if(!q)return;
+  document.getElementById('chat').innerHTML='';
+  addMsg(q,'q');
+  document.getElementById('btn').disabled=true;
+  document.getElementById('chat').innerHTML+='<div class="loader">检索中...</div>';
+  try{
+    const r=await fetch('/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,top_k:20})});
+    const d=await r.json();
+    document.querySelector('.loader')?.remove();
+    let html=`<div class="msg a">${d.answer||'(无回答)'}</div>`;
+    if(d.chunks&&d.chunks.length){
+      html+='<div class="chunks">';
+      d.chunks.forEach((c,i)=>{
+        const id=c.chunk_id||'';
+        const score=(c.score||0).toFixed(4);
+        const src=c.source_uri||'unknown source';
+        html+=`<div class="chunk"><span class="meta">[${i+1}] ${id} score=${score}</span><div class="source">source=${src}</div><div class="text">${c.text||''}</div></div>`;
+      });
+      html+='</div>';
+    }
+    document.getElementById('chat').innerHTML+=html;
+  }catch(err){
+    document.querySelector('.loader')?.remove();
+    addMsg('错误: '+err.message,'a');
+  }
+  document.getElementById('btn').disabled=false;
+}
+function addMsg(t,cls){document.getElementById('chat').innerHTML+=`<div class="msg ${cls}">${t}</div>`}
+fetch('/').then(r=>r.json()).then(d=>document.getElementById('stat').textContent='chunks: '+d.chunks_indexed);
+</script>
+</body></html>
