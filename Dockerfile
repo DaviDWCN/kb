@@ -14,7 +14,7 @@ COPY src/ ./src/
 COPY scripts/ ./scripts/
 
 # Install the package with all optional dependencies to ensure it works offline
-RUN pip install --no-cache-dir ".[parsing,reranking,providers,vector]"
+RUN pip install --no-cache-dir ".[parsing,reranking,providers,server,vector]"
 
 EXPOSE 8080
 

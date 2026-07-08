@@ -35,6 +35,10 @@ reranking = [
 providers = [
   "openai",
 ]
+server = [
+  "fastapi",
+  "uvicorn",
+]
 vector = [
   "faiss-cpu",
   "numpy",
